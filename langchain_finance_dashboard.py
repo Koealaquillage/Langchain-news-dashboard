@@ -9,32 +9,27 @@ from langchain_community.vectorstores import FAISS
 from Document_Processor import DocumentProcessor
 from Embeddings import EmbeddingsManager
 from secret_key import openai_key
+from PageElements import SideBar, mainElement
 
 # Ensure environment variable is set
 os.environ['OPENAI_API_KEY'] = openai_key
 llm = OpenAI(temperature=0.9, max_tokens=500)
+
 DocumentProcessor = DocumentProcessor()
 EmbeddingsManager = EmbeddingsManager()
-
-st.title("News Research tool 📈")
-
-st.sidebar.title("News Articles URL's")
-
-main_placeholder = st.empty()
+SideBar = SideBar()
+mainElement = mainElement()
 
 docs_file_path = "faiss_docs.json"
-urls = []
-for i in range(3):
-    url = st.sidebar.text_input(f"URL {i + 1}")
-    urls.append(url)
-process_url_clicked = st.sidebar.button("Process URLs")
 
-if process_url_clicked:
-    documents_from_urls = DocumentProcessor.load_documents_from_urls(urls)
-    main_placeholder.text("Data Loading...Started...✅✅✅")
-    main_placeholder.text("Text Splitter...Started...✅✅✅")
+SideBar.create()
+mainElement.create()
+
+if SideBar.process_url_clicked:
+    documents_from_urls = DocumentProcessor.load_documents_from_urls(SideBar.urls)
+    mainElement.placeholder.text("Data Loading...Started...✅✅✅")
     docs = DocumentProcessor.split_documents(documents_from_urls)
-
+    mainElement.placeholder.text("Text Splitter...Started...✅✅✅")
     time.sleep(3)
 
     vectorstore_openai = FAISS.from_documents(docs, EmbeddingsManager.embeddings)
@@ -51,29 +46,21 @@ else:
         embeddings = EmbeddingsManager.embeddings
         vectorstore_openai = FAISS.from_documents(documents, EmbeddingsManager.embeddings)
 
-        main_placeholder.text("Loaded stored FAISS vectorstore...✅✅✅")
+        mainElement.placeholder.text("Loaded stored FAISS vectorstore...✅✅✅")
     else: 
-        main_placeholder.text("No stored vectorstore found. Please process URLs first.")
+        mainElement.placeholder.text("No stored vectorstore found. Please process URLs first.")
 
 
 if vectorstore_openai:
     retriever = vectorstore_openai.as_retriever()
 
 
-    query = main_placeholder.text_input("Question: ")
-    st.header("Answer")
-    st.write(query)
-    if query: 
-        chain = RetrievalQAWithSourcesChain.from_llm(llm = llm, retriever = vectorstore_openai.as_retriever())
-        result = chain({"question": query}, return_only_outputs = True)
+    mainElement.askQuestion()
+    if mainElement.query: 
+        chain = RetrievalQAWithSourcesChain.from_llm(llm = llm, 
+                                                     retriever = vectorstore_openai.as_retriever())
+        result = chain({"question": mainElement.query}, return_only_outputs = True)
 
-        st.header("Answer")
-        st.write(result["answer"])
+        mainElement.printAnswer(result)
 
-        # Display sources, if available
-        sources = result.get("sources", "")
-        if sources:
-            st.subheader("Sources:")
-            sources_list = sources.split("\n")  # Split the sources by newline
-            for source in sources_list:
-                st.write(source)
+        mainElement.printSources(result)
