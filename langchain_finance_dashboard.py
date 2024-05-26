@@ -1,41 +1,19 @@
 import os
 import streamlit as st
 import time
-import json
 from langchain import OpenAI
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import UnstructuredURLLoader
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
-from langchain.docstore.document import Document
+
+from Document_Processor import DocumentProcessor
 from secret_key import openai_key
 
 # Ensure environment variable is set
 os.environ['OPENAI_API_KEY'] = openai_key
 llm = OpenAI(temperature=0.9, max_tokens=500)
-
-def save_documents(docs, docs_file_path):
-    docs_data = [
-        {"content": doc.page_content, "metadata": doc.metadata}
-        for doc in docs
-    ]
-    with open(docs_file_path, "w") as f:
-        json.dump(docs_data, f)
-
-def load_faiss_index_from_documents(docs_file_path):
-    with open(docs_file_path, "r") as f:
-        docs_data = json.load(f)
-    
-    embeddings = OpenAIEmbeddings()
-    
-    documents = [
-        Document(page_content=doc["content"], metadata=doc["metadata"])
-        for doc in docs_data
-    ]
-    vectorstore = FAISS.from_documents(documents, embeddings)
-    return vectorstore
+DocumentProcessor = DocumentProcessor()
 
 st.title("News Research tool 📈")
 
@@ -51,15 +29,10 @@ for i in range(3):
 process_url_clicked = st.sidebar.button("Process URLs")
 
 if process_url_clicked:
-    loader = UnstructuredURLLoader(urls=urls)
+    documents_from_urls = DocumentProcessor.load_documents_from_urls(urls)
     main_placeholder.text("Data Loading...Started...✅✅✅")
-    data = loader.load()
-    text_splitter = RecursiveCharacterTextSplitter(
-        separators = ["\n\n", "\n", ".", ","],
-        chunk_size=1000
-    )
     main_placeholder.text("Text Splitter...Started...✅✅✅")
-    docs = text_splitter.split_documents(data)
+    docs = DocumentProcessor.split_documents(documents_from_urls)
 
     embeddings = OpenAIEmbeddings()
 
@@ -67,14 +40,18 @@ if process_url_clicked:
 
     vectorstore_openai = FAISS.from_documents(docs, embeddings)
 
-    save_documents(docs, docs_file_path)
+    DocumentProcessor.save_documents(docs, docs_file_path)
 
     time.sleep(2)
 
 else:
     # Load the FAISS vectorstore from a file if it exists
     if os.path.exists(docs_file_path):
-        vectorstore_openai = load_faiss_index_from_documents(docs_file_path)
+        documents = DocumentProcessor.load_documents_from_file(docs_file_path)
+
+        embeddings = OpenAIEmbeddings()
+        vectorstore_openai = FAISS.from_documents(documents, embeddings)
+
         main_placeholder.text("Loaded stored FAISS vectorstore...✅✅✅")
     else: 
         main_placeholder.text("No stored vectorstore found. Please process URLs first.")
