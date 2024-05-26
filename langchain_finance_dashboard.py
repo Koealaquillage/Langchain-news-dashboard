@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 import time
-from langchain import OpenAI
+from langchain_community.llms import OpenAI
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
 from langchain_community.vectorstores import FAISS
