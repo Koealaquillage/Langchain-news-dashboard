@@ -4,16 +4,17 @@ import time
 from langchain import OpenAI
 from langchain.chains import RetrievalQAWithSourcesChain
 from langchain.chains.qa_with_sources.loading import load_qa_with_sources_chain
-from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
 from Document_Processor import DocumentProcessor
+from Embeddings import EmbeddingsManager
 from secret_key import openai_key
 
 # Ensure environment variable is set
 os.environ['OPENAI_API_KEY'] = openai_key
 llm = OpenAI(temperature=0.9, max_tokens=500)
 DocumentProcessor = DocumentProcessor()
+EmbeddingsManager = EmbeddingsManager()
 
 st.title("News Research tool 📈")
 
@@ -34,11 +35,9 @@ if process_url_clicked:
     main_placeholder.text("Text Splitter...Started...✅✅✅")
     docs = DocumentProcessor.split_documents(documents_from_urls)
 
-    embeddings = OpenAIEmbeddings()
-
     time.sleep(3)
 
-    vectorstore_openai = FAISS.from_documents(docs, embeddings)
+    vectorstore_openai = FAISS.from_documents(docs, EmbeddingsManager.embeddings)
 
     DocumentProcessor.save_documents(docs, docs_file_path)
 
@@ -49,8 +48,8 @@ else:
     if os.path.exists(docs_file_path):
         documents = DocumentProcessor.load_documents_from_file(docs_file_path)
 
-        embeddings = OpenAIEmbeddings()
-        vectorstore_openai = FAISS.from_documents(documents, embeddings)
+        embeddings = EmbeddingsManager.embeddings
+        vectorstore_openai = FAISS.from_documents(documents, EmbeddingsManager.embeddings)
 
         main_placeholder.text("Loaded stored FAISS vectorstore...✅✅✅")
     else: 
