@@ -15,8 +15,7 @@ class DocumentProcessor:
     def split_documents(self, data):
         text_splitter = RecursiveCharacterTextSplitter(
             separators=["\n\n", "\n", ".", ","],
-            chunk_size=self.chunk_size
-        )
+            chunk_size=self.chunk_size)
         docs = text_splitter.split_documents(data)
         return docs
 

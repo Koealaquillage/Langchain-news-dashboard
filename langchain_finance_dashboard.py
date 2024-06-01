@@ -16,9 +16,6 @@ os.environ['OPENAI_API_KEY'] = openai_key
 llm = OpenAI(temperature=0.9, max_tokens=500)
 docs_file_path = "faiss_docs.json"
 
-def processURLs():
-    
-
 DocumentProcessor = DocumentProcessor()
 EmbeddingsManager = EmbeddingsManager()
 SideBar = SideBar()
